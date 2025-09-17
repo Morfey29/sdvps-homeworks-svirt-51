@@ -108,6 +108,7 @@ services:
     restart: always
 
   pushgateway:
+    container_name: doykov-am-netology-pushgateway 
     image: prom/pushgateway
     restart: always
     expose:
