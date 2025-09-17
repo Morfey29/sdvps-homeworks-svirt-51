@@ -3,6 +3,7 @@ version: '1.0'
 volumes:
   prometheus_data: {}
   grafana_data: {}
+  alertmanager_data: {}
 
 networks:
   doykov-am-my-netology-hw:
@@ -24,6 +25,8 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - alertmanager
 
     ports:
       - 9090:9090
@@ -67,11 +70,12 @@ services:
       - 9093:9093
     volumes:
       - ./alertmanager/:/etc/alertmanager/
+      - alertmanager_data:/alertmanager
     networks:
       - doykov-am-my-netology-hw
     restart: always
     command:
-      - '--config.file=/etc/alertmanager/config.yml'
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
 
   cadvisor:
