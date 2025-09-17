@@ -36,7 +36,7 @@ services:
       - pushgateway
     networks:
       - doykov-am-my-netology-hw
-    restartg: always
+    restart: always
 
   node-exporter:
     container_name: doykov-am-netology-node-explorer
