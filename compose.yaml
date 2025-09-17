@@ -40,6 +40,7 @@ services:
     restart: always
 
   node-exporter:
+    container_name: doykov-am-netology-node-explorer
     image: quay.io/prometheus/node-exporter:latest
     volumes:
       - /proc:/host/proc:ro
@@ -61,7 +62,10 @@ services:
       mode: global
 
   alertmanager:
+    container_name: doykov-am-netology-alertmanager
     image: prom/alertmanager
+    expose:
+      - 9093
     ports:
       - 9093:9093
     volumes:
@@ -74,6 +78,7 @@ services:
       - '--storage.path=/alertmanager'
 
   cadvisor:
+    container_name: doykov-am-netology-cadvisor
     image: gcr.io/cadvisor/cadvisor
     volumes:
       - /:/rootfs:ro,rslave
