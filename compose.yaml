@@ -24,8 +24,8 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
-    expose:
-      - 9090
+#   expose:
+#     - 9090
     ports:
       - 9090:9090
     links:
@@ -37,7 +37,11 @@ services:
       - pushgateway
     networks:
       - doykov-am-my-netology-hw
-    restart: always
+    restartg: always
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == ${HOSTNAME}
 
   node-exporter:
     container_name: doykov-am-netology-node-explorer
@@ -64,8 +68,8 @@ services:
   alertmanager:
     container_name: doykov-am-netology-alertmanager
     image: prom/alertmanager
-    expose:
-      - 9093
+#    expose:
+#      - 9093
     ports:
       - 9093:9093
     volumes:
@@ -76,6 +80,10 @@ services:
     command:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == ${HOSTNAME}
 
   cadvisor:
     container_name: doykov-am-netology-cadvisor
@@ -99,8 +107,8 @@ services:
     user: "472"
     depends_on:
       - prometheus
-    expose:
-      - 80
+#    expose:
+#      - 80
     ports:
       - 80:3000
     environment:
