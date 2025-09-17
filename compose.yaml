@@ -4,7 +4,14 @@ volumes:
   prometheus_data: {}
   grafana_data: {}
 
-service:
+networks:
+  doykov-am-my-netology-hw:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+
+services:
 
   prometheus:
     container_name: doykov-am-netology-prometheus
@@ -108,11 +115,4 @@ service:
     ports:
       - "9091:9091"
     networks:
-      - DoykovAM-my-netology-hw
-
-network:
-  doykov-am-my-netology-hw:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.5.0.0/16
+      - doykov-am-my-netology-hw
