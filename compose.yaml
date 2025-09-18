@@ -14,6 +14,50 @@ networks:
 
 services:
 
+  alertmanager:
+    container_name: doykov-am-netology-alertmanager
+    image: prom/alertmanager
+    ports:
+      - 9093:9093
+    volumes:
+      - ./alertmanager/:/etc/alertmanager/
+      - alertmanager_data:/alertmanager
+    networks:
+      - doykov-am-my-netology-hw
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:9093/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  cadvisor:
+    container_name: doykov-am-netology-cadvisor
+    image: gcr.io/cadvisor/cadvisor
+    volumes:
+      - /:/rootfs:ro,rslave
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro,rslave
+    ports:
+      - 8080:8080
+    networks:
+      - doykov-am-my-netology-hw
+    restart: unless-stopped
+    deploy:
+      mode: global
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+
   prometheus:
     container_name: doykov-am-netology-prometheus
     image: prom/prometheus:v2.36.2
@@ -31,13 +75,21 @@ services:
       - cadvisor:cadvisor
       - alertmanager:alertmanager
       - pushgateway:pushgateway
-    depends_on:
-      - cadvisor
-      - pushgateway
-      - alertmanager
+    depends_on:  
+      alertmanager:
+          condition: service_healthy
+      cadvisor:
+          condition: service_healthy
     networks:
       - doykov-am-my-netology-hw
-    restart: always
+    restart: 
+      on-failure: 5s
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   node-exporter:
     container_name: doykov-am-netology-node-explorer
@@ -60,44 +112,16 @@ services:
     restart: always
     deploy:
       mode: global
-
-  alertmanager:
-    container_name: doykov-am-netology-alertmanager
-    image: prom/alertmanager
-    ports:
-      - 9093:9093
-    volumes:
-      - ./alertmanager/:/etc/alertmanager/
-      - alertmanager_data:/alertmanager
-    networks:
-      - doykov-am-my-netology-hw
-    restart: always
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-
-  cadvisor:
-    container_name: doykov-am-netology-cadvisor
-    image: gcr.io/cadvisor/cadvisor
-    volumes:
-      - /:/rootfs:ro,rslave
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro,rslave
-    ports:
-      - 8080:8080
-    networks:
-      - doykov-am-my-netology-hw
-    restart: always
-    deploy:
-      mode: global
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   grafana:
     container_name: doykov-am-netology-grafana
     image: grafana/grafana
     user: "472"
-    depends_on:
-      - prometheus
     ports:
       - 80:3000
     environment:
@@ -107,7 +131,16 @@ services:
       - ./grafana/custom.ini:/etc/grafana/custom.ini:ro
     networks:
       - doykov-am-my-netology-hw
-    restart: always
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   pushgateway:
     container_name: doykov-am-netology-pushgateway 
