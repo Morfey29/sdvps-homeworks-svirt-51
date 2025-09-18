@@ -82,8 +82,7 @@ services:
           condition: service_healthy
     networks:
       - doykov-am-my-netology-hw
-    restart: 
-      on-failure: 5s
+    restart: on-failure:5
     healthcheck:
       test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:9090/-/healthy"]
       interval: 15s
