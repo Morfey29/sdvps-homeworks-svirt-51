@@ -56,7 +56,7 @@
 
 Скриншот к заданию 2:
 
-![Скриншот-2](https://github.com/Morfey29/sdvps-homeworks-svirt-51/blob/main/img/img1.png)
+![Скриншот-1](https://github.com/Morfey29/sdvps-homeworks-svirt-51/blob/main/img/img1.png)
 
 ---
 
@@ -115,6 +115,167 @@
 * скриншот команды docker ps после запуске docker-compose.yml;
 * скриншот графика, постоенного на основе вашей метрики.
 
+Содержимое compose
+```yaml
+version: '1.0'
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+  alertmanager_data: {}
+
+networks:
+  doykov-am-my-netology-hw:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+
+services:
+
+  alertmanager:
+    container_name: doykov-am-netology-alertmanager
+    image: prom/alertmanager
+    ports:
+      - 9093:9093
+    volumes:
+      - ./alertmanager/:/etc/alertmanager/
+      - alertmanager_data:/alertmanager
+    networks:
+      - doykov-am-my-netology-hw
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:9093/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  cadvisor:
+    container_name: doykov-am-netology-cadvisor
+    image: gcr.io/cadvisor/cadvisor
+    volumes:
+      - /:/rootfs:ro,rslave
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro,rslave
+    ports:
+      - 8080:8080
+    networks:
+      - doykov-am-my-netology-hw
+    restart: unless-stopped
+    deploy:
+      mode: global
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+
+  prometheus:
+    container_name: doykov-am-netology-prometheus
+    image: prom/prometheus:v2.36.2
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+    links:
+      - cadvisor:cadvisor
+      - alertmanager:alertmanager
+      - pushgateway:pushgateway
+    depends_on:  
+      alertmanager:
+          condition: service_healthy
+      cadvisor:
+          condition: service_healthy
+    networks:
+      - doykov-am-my-netology-hw
+    restart: on-failure:5
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  node-exporter:
+    container_name: doykov-am-netology-node-explorer
+    image: quay.io/prometheus/node-exporter:latest
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro,rslave
+      - /:/host:ro,rslave   # Ensure using 'rslave' for /host mount
+    command: 
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - 9100:9100
+    networks:
+      - doykov-am-my-netology-hw
+    restart: always
+    deploy:
+      mode: global
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    container_name: doykov-am-netology-grafana
+    image: grafana/grafana
+    user: "472"
+    ports:
+      - 80:3000
+    environment:
+      - GF_PATHS_CONFIG=/etc/grafana/custom.ini
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/custom.ini:/etc/grafana/custom.ini:ro
+    networks:
+      - doykov-am-my-netology-hw
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  pushgateway:
+    container_name: doykov-am-netology-pushgateway 
+    image: prom/pushgateway
+    restart: always
+    expose:
+      - 9091
+    ports:
+      - "9091:9091"
+    networks:
+      - doykov-am-my-netology-hw
+```
+скриншот docker ps 
+![Скриншот-2](https://github.com/Morfey29/sdvps-homeworks-svirt-51/blob/main/img/img2.png)
+
+скриншот метрика grafana 
+![Скриншот-3](https://github.com/Morfey29/sdvps-homeworks-svirt-51/blob/main/img/img3.png)
 ---
 
 ### Задание 8
@@ -125,6 +286,12 @@
 
 В качестве решения приложите скриншот консоли с проделанными действиями.
 
+скриншот удаления всех контейнеров 
+```
+docker rm -f $(docker ps -a -q)
+```
+
+![Скриншот-4](https://github.com/Morfey29/sdvps-homeworks-svirt-51/blob/main/img/img4.png)
 ---
 
 ## Дополнительные задания* (со звёздочкой)
